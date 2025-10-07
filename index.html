@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Modern Food Delivery App</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(to right, #f857a6, #ff5858);
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h1 {
+      margin-top: 30px;
+      font-size: 36px;
+      text-shadow: 1px 1px 2px #000;
+    }
+
+    .container {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 20px 30px;
+      border-radius: 15px;
+      margin-top: 20px;
+      width: 90%;
+      max-width: 600px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    select, button {
+      padding: 10px;
+      margin: 10px 5px;
+      border-radius: 8px;
+      border: none;
+      font-size: 16px;
+    }
+
+    select {
+      width: 60%;
+    }
+
+    button {
+      background-color: #ffffff;
+      color: #ff5858;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background-color: #ffe3e3;
+    }
+
+    #log, #history {
+      background: rgba(255, 255, 255, 0.15);
+      margin-top: 20px;
+      padding: 10px;
+      border-radius: 10px;
+      height: 180px;
+      overflow-y: auto;
+      font-size: 14px;
+    }
+
+    .timestamp {
+      font-size: 12px;
+      color: #ccc;
+    }
+
+    .section-title {
+      font-weight: bold;
+      margin-top: 20px;
+      border-bottom: 1px solid #ccc;
+      padding-bottom: 5px;
+    }
+
+    @media (max-width: 600px) {
+      h1 {
+        font-size: 28px;
+      }
+
+      select, button {
+        width: 100%;
+        margin: 8px 0;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🍕 ZomoSwiggy - Food Delivery</h1>
+  <div class="container">
+    <label for="strategy">Choose Delivery Type:</label><br>
+    <select id="strategy">
+      <option value="standard">🚚 Standard Delivery</option>
+      <option value="express">⚡ Express Delivery</option>
+      <option value="free">🎁 Free Delivery</option>
+    </select>
+
+    <br>
+    <button onclick="executeCommand('place')">Place Order</button>
+    <button onclick="executeCommand('cancel')">Cancel Order</button>
+    <button onclick="executeCommand('track')">Track Order</button>
+
+    <div class="section-title">📋 Action Log</div>
+    <div id="log"></div>
+
+    <div class="section-title">🕓 Order History</div>
+    <div id="history"></div>
+  </div>
+
+  <script>
+    // ---------------- Observer Pattern ----------------
+    class DeliveryAgent {
+      constructor(name) {
+        this.name = name;
+      }
+
+      notify(orderId) {
+        log(`✅ ${this.name} assigned to Order #${orderId}`);
+      }
+    }
+
+    class Restaurant {
+      constructor() {
+        this.deliveryAgents = [];
+        this.orderCount = 0;
+      }
+
+      register(agent) {
+        this.deliveryAgents.push(agent);
+      }
+
+      newOrder() {
+        const orderId = ++this.orderCount;
+        log(`🛒 New Order Placed: #${orderId}`);
+        this.notifyAgents(orderId);
+        return orderId;
+      }
+
+      notifyAgents(orderId) {
+        const agent = this.deliveryAgents[Math.floor(Math.random() * this.deliveryAgents.length)];
+        agent.notify(orderId);
+      }
+    }
+
+    // ---------------- Strategy Pattern ----------------
+    class DeliveryStrategy {
+      calculate() {
+        throw new Error('Strategy not implemented');
+      }
+    }
+
+    class StandardDelivery extends DeliveryStrategy {
+      calculate() {
+        return { fee: 30, eta: '45 mins' };
+      }
+    }
+
+    class ExpressDelivery extends DeliveryStrategy {
+      calculate() {
+        return { fee: 60, eta: '25 mins' };
+      }
+    }
+
+    class FreeDelivery extends DeliveryStrategy {
+      calculate() {
+        return { fee: 0, eta: '60 mins' };
+      }
+    }
+
+    // ---------------- Command Pattern ----------------
+    class Command {
+      execute() {}
+    }
+
+    class PlaceOrderCommand extends Command {
+      constructor(restaurant, strategy) {
+        super();
+        this.restaurant = restaurant;
+        this.strategy = strategy;
+      }
+
+      execute() {
+        const orderId = this.restaurant.newOrder();
+        const { fee, eta } = this.strategy.calculate();
+        log(`💰 Delivery Fee: ₹${fee}`);
+        log(`⏱ Estimated Time of Arrival: ${eta}`);
+        saveOrderHistory(orderId, fee, eta);
+      }
+    }
+
+    class CancelOrderCommand extends Command {
+      execute() {
+        log("❌ Order has been canceled.");
+      }
+    }
+
+    class TrackOrderCommand extends Command {
+      execute() {
+        log("📍 Order is being prepared... Tracking started!");
+      }
+    }
+
+    // ---------------- Helpers ----------------
+    const logBox = document.getElementById("log");
+    const historyBox = document.getElementById("history");
+
+    function log(msg) {
+      const time = new Date().toLocaleTimeString();
+      logBox.innerHTML += `<div><span class="timestamp">[${time}]</span> ${msg}</div>`;
+      logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    function saveOrderHistory(orderId, fee, eta) {
+      const time = new Date().toLocaleTimeString();
+      historyBox.innerHTML += `<div><strong>Order #${orderId}</strong> | Fee: ₹${fee} | ETA: ${eta} <span class="timestamp">[${time}]</span></div>`;
+      historyBox.scrollTop = historyBox.scrollHeight;
+    }
+
+    const restaurant = new Restaurant();
+    restaurant.register(new DeliveryAgent("Agent 🛵 Raju"));
+    restaurant.register(new DeliveryAgent("Agent 🚴 Tina"));
+    restaurant.register(new DeliveryAgent("Agent 🚗 Arjun"));
+
+    function getStrategy() {
+      const selected = document.getElementById("strategy").value;
+      switch (selected) {
+        case "standard": return new StandardDelivery();
+        case "express": return new ExpressDelivery();
+        case "free": return new FreeDelivery();
+      }
+    }
+
+    function executeCommand(action) {
+      let command;
+      switch (action) {
+        case 'place':
+          command = new PlaceOrderCommand(restaurant, getStrategy());
+          break;
+        case 'cancel':
+          command = new CancelOrderCommand();
+          break;
+        case 'track':
+          command = new TrackOrderCommand();
+          break;
+      }
+      command.execute();
+    }
+  </script>
+</body>
+</html>
